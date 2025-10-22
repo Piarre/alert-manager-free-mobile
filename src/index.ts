@@ -1,14 +1,14 @@
 import { Elysia } from "elysia";
 import debugRoutes from "@/routes/debug";
 import smsRoutes from "@/routes/sms";
-import { prepareDb } from "@/lib/db";
 import log from "@/lib/utils/log";
+import bootstrap from "./lib/utils/bootstrap";
 
 (async () => {
+  bootstrap();
+
   const PORT = parseInt(process.env.PORT || "2025", 10);
   const app = new Elysia().use(debugRoutes).use(smsRoutes).listen(PORT);
-
-  if (process.env.LOG_SMS === "true") await prepareDb();
 
   log(`🦊 Elysia is running at ${app.server?.url?.href}`);
 

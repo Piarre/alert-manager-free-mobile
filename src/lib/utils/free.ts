@@ -1,6 +1,6 @@
 import { Alert } from "@/lib/types/alert-manager";
 
-const formatAlertMessage = (alert: Alert): any => {
+const formatAlertMessage = (alert: Alert): string => {
   const { status, labels, annotations } = alert;
 
   const alertname = labels.alertname || "";

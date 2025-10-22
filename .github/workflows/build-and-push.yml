@@ -1,4 +1,4 @@
-name: Deploy API
+name: Deploy application
 
 on:
   push:
@@ -16,18 +16,19 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/piarre/alert-manager-free-mobile
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Set up Docker tags
+        id: tags
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          SHA_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+          
+          if [ "$BRANCH_NAME" = "main" ]; then
+            echo "tags=latest,${SHA_SHORT},${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "tags=${BRANCH_NAME},${SHA_SHORT}" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Publish Docker Image
         uses: elgohr/Publish-Docker-Github-Action@v4
         with:
@@ -36,4 +37,4 @@ jobs:
           username: piarre
           password: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: Dockerfile
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: "${{ steps.tags.outputs.tags }}"

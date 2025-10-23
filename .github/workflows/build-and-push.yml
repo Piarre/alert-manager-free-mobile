@@ -38,3 +38,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: Dockerfile
           tags: "${{ steps.tags.outputs.tags }}"
+
+      - name: Notifiy build success
+        uses: ./.github/workflows/notify.yml
+        with:
+          message: "✅ Deployment of `${{ github.ref_name }}` successful! 🚀"

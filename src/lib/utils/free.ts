@@ -9,8 +9,8 @@ const formatAlertMessage = (alert: Alert): string => {
   const description = annotations.description || "";
 
   return status === "firing"
-    ? `⛔ ${alertname} is firing ${instance}\n${summary}\n${description}`
-    : `✅ ${alertname} resolved ${instance}\n${summary}\n${description}`;
+    ? `⛔ ${alertname} is firing ${instance}\n\n${summary}\n${description}`
+    : `✅ ${alertname} resolved ${instance}\n\n${summary}\n${description}`;
 };
 
 const sendMessage = async (message: string): Promise<Response> => {

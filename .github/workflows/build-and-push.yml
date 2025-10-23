@@ -39,7 +39,9 @@ jobs:
           dockerfile: Dockerfile
           tags: "${{ steps.tags.outputs.tags }}"
 
-      - name: Notifiy build success
-        uses: ./.github/workflows/notify.yml
-        with:
-          message: "✅ Deployment of `${{ github.ref_name }}` successful! 🚀"
+  notify:
+    needs: deploy
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: "✅ Deployment of `${{ github.ref_name }}` successful! 🚀"
+    secrets: inherit

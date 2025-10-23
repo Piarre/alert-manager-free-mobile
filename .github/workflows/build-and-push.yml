@@ -43,5 +43,5 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/notify.yml
     with:
-      message: "✅ Deployment of `${{ github.ref_name }}` successful! 🚀"
+      message: "✅ Deployment of `${{ github.repository }}` on branch `${{ github.ref_name }}` successful! 🚀"
     secrets: inherit

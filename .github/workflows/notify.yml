@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       message:
-        description: 'Message à envoyer'
+        description: 'Message to send'
         required: true
         type: string
 
@@ -14,7 +14,4 @@ jobs:
     steps:
       - name: Send notification
         run: |
-          curl https://smsapi.free-mobile.fr/sendmsg \
-          ?user=${{ secrets.FREE_MOBILE_USER }} \
-          &pass=${{ secrets.FREE_MOBILE_PASS }} \
-          &msg="${{ inputs.message }}"
+          curl "https://smsapi.free-mobile.fr/sendmsg?user=${{ secrets.FREE_MOBILE_USER }}&pass=${{ secrets.FREE_MOBILE_PASS }}&msg=${{ inputs.message }}"

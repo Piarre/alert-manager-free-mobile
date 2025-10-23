@@ -4,12 +4,13 @@ const formatAlertMessage = (alert: Alert): string => {
   const { status, labels, annotations } = alert;
 
   const alertname = labels.alertname || "";
-  const instance = labels.instance || "";
-  const summary = annotations.summary || annotations.description || "";
+  const instance = labels.instance || "" ? `on ${labels.instance}` : "";
+  const summary = annotations.summary || "";
+  const description = annotations.description || "";
 
   return status === "firing"
-    ? `⛔ ${alertname}\n${summary}${instance ? `\n📍 ${instance}` : ""}`
-    : `✅ ${alertname} resolved${instance ? `\n📍 ${instance}` : ""}`;
+    ? `⛔ ${alertname} is firing ${instance}\n${summary}\n${description}`
+    : `✅ ${alertname} resolved ${instance}\n${summary}\n${description}`;
 };
 
 const sendMessage = async (message: string): Promise<Response> => {

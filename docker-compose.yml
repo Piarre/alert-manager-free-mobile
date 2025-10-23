@@ -1,0 +1,20 @@
+services:
+  alert-manager-free-mobile:
+    image: ghcr.io/piarre/alert-manager-free-mobile:latest
+    container_name: alert-manager-free-mobile
+    restart: unless-stopped
+    ports:
+      - "2025:2025"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2025/debug/healthcheck"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 3
+    environment:
+      - FREE_MOBILE_USER=
+      - FREE_MOBILE_PASS=
+      - LOG_SMS=true
+      - LOG_DB_URI=mariadb://user:password@host:3306/sms_logs
+    # If using SQLite, uncomment the following volume to persist the database
+    # volumes:
+    #   - ./data:/app

@@ -9,34 +9,42 @@ interface SmsLog {
 }
 
 class DB {
-  private db: SQL;
+  private db: SQL | null = null;
   private static instance: DB;
+  private enabled: boolean;
 
   private constructor() {
+    this.enabled = process.env.LOG_SMS === "true";
+    
+    if (!this.enabled) {
+      logger.db("Database logging disabled (LOG_SMS is not 'true')");
+      return;
+    }
+
     try {
       this.db = new SQL(process.env.LOG_DB_URI!);
       this.initTables();
-      logger.db(`Database initialized successfully`);
+      logger.db("Database initialized successfully");
     } catch (error) {
       logger.error(`Failed to initialize database: ${error}`);
+      this.enabled = false;
       throw error;
     }
   }
 
   public static getInstance(): DB {
     if (!DB.instance) DB.instance = new DB();
-
     return DB.instance;
   }
 
   private async initTables(): Promise<void> {
+    if (!this.db) return;
+    
     try {
-      // Détecte le type de base de données à partir de l'URI
       const dbUri = process.env.LOG_DB_URI || "";
       const isSQLite = dbUri.includes("sqlite") || dbUri.endsWith(".db");
-      
+
       if (isSQLite) {
-        // Syntaxe SQLite
         await this.db`
           CREATE TABLE IF NOT EXISTS sms_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,11 +53,9 @@ class DB {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           );
         `;
-        // Créer les index séparément pour SQLite
         await this.db`CREATE INDEX IF NOT EXISTS idx_type ON sms_logs(type);`;
         await this.db`CREATE INDEX IF NOT EXISTS idx_created_at ON sms_logs(created_at);`;
       } else {
-        // Syntaxe MySQL/MariaDB
         await this.db`
           CREATE TABLE IF NOT EXISTS sms_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -61,7 +67,7 @@ class DB {
           );
         `;
       }
-      
+
       logger.db("Database tables created successfully");
     } catch (error) {
       logger.error(`Failed to create tables: ${error}`);
@@ -70,6 +76,8 @@ class DB {
   }
 
   public async log(type: string, message: string): Promise<number> {
+    if (!this.enabled || !this.db) return 0;
+    
     try {
       const result = await this.db`
         INSERT INTO sms_logs (type, message) 
@@ -85,6 +93,8 @@ class DB {
   }
 
   public async getLogs(limit: number = 100): Promise<SmsLog[]> {
+    if (!this.enabled || !this.db) return [];
+    
     try {
       const logs = await this.db`
         SELECT * FROM sms_logs 
@@ -99,6 +109,8 @@ class DB {
   }
 
   public async getLogsByType(type: string, limit: number = 100): Promise<SmsLog[]> {
+    if (!this.enabled || !this.db) return [];
+    
     try {
       const logs = await this.db`
         SELECT * FROM sms_logs 
@@ -114,25 +126,25 @@ class DB {
   }
 
   public async cleanOldLogs(daysToKeep: number = 30): Promise<number> {
+    if (!this.enabled || !this.db) return 0;
+    
     try {
       const dbUri = process.env.LOG_DB_URI || "";
       const isSQLite = dbUri.includes("sqlite") || dbUri.endsWith(".db");
-      
+
       let result;
       if (isSQLite) {
-        // Syntaxe SQLite
         result = await this.db`
           DELETE FROM sms_logs 
           WHERE created_at < datetime('now', '-' || ${daysToKeep} || ' days')
         `;
       } else {
-        // Syntaxe MySQL/MariaDB
         result = await this.db`
           DELETE FROM sms_logs 
           WHERE created_at < DATE_SUB(NOW(), INTERVAL ${daysToKeep} DAY)
         `;
       }
-      
+
       const affectedRows = result.affectedRows || result.changes || 0;
       logger.db(`${affectedRows} logs deleted`);
       return affectedRows as number;
@@ -143,10 +155,10 @@ class DB {
   }
 
   public async countLogs(): Promise<number> {
+    if (!this.enabled || !this.db) return 0;
+    
     try {
-      const result = await this.db`
-        SELECT COUNT(*) as count FROM sms_logs
-      `;
+      const result = await this.db`SELECT COUNT(*) as count FROM sms_logs`;
       return (result[0] as { count: number }).count;
     } catch (error) {
       logger.error(`Failed to count logs: ${error}`);
@@ -155,6 +167,8 @@ class DB {
   }
 
   public async countLogsByType(): Promise<Record<string, number>> {
+    if (!this.enabled || !this.db) return {};
+    
     try {
       const result = await this.db`
         SELECT type, COUNT(*) as count 
@@ -173,6 +187,8 @@ class DB {
   }
 
   public async getLogsByDateRange(startDate: Date, endDate: Date): Promise<SmsLog[]> {
+    if (!this.enabled || !this.db) return [];
+    
     try {
       const logs = await this.db`
         SELECT * FROM sms_logs 
@@ -187,6 +203,8 @@ class DB {
   }
 
   public async query(strings: TemplateStringsArray, ...values: any[]): Promise<any> {
+    if (!this.enabled || !this.db) return null;
+    
     try {
       return await this.db(strings, ...values);
     } catch (error) {
@@ -196,8 +214,9 @@ class DB {
   }
 
   public close(): void {
+    if (!this.enabled || !this.db) return;
+    
     try {
-      // Bun SQL handles connections automatically
       logger.db("Database connection closed");
     } catch (error) {
       logger.error(`Failed to close database connection: ${error}`);
@@ -205,8 +224,12 @@ class DB {
     }
   }
 
-  public getConnection(): SQL {
+  public getConnection(): SQL | null {
     return this.db;
+  }
+
+  public isEnabled(): boolean {
+    return this.enabled;
   }
 }
 
